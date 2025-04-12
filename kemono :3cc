@@ -2,17 +2,20 @@ local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 
 local billboardData = {}
 local isBillboardVisible = true
 local currentColorIndex = 3
 local colorList = {
-    BrickColor.new("Neon orange"),-- add any colors you want. just not fromRGB but a brickcolor. if you dont know what they are look it up.
+    BrickColor.new("Neon orange"),
     BrickColor.new("New Yeller"),
     BrickColor.new("Magenta"),
     BrickColor.new("Bright bluish green"),
     BrickColor.new("Lapis"),
-    BrickColor.new("Maroon"),--make sure you have a "," at the end or it will break
+    BrickColor.new("Maroon"),
+    BrickColor.new("Black"),
 }
 local meshColorMap = {}
 local autoChangeEnabled = false
@@ -20,7 +23,10 @@ local autoChangeEnabled = false
 ------------------------------------------------------------
 -- Esp (it's ASS)
 ------------------------------------------------------------
-local function createBillboard(character, targetPlayer)
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+local function createBillboard(character)
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
@@ -47,49 +53,68 @@ local function createBillboard(character, targetPlayer)
         return lbl
     end
 
-    local hpLabel = makeLabel("HPLabel", UDim2.new(0, 0, 0, 0), Color3.new(52/255, 235/255, 155/255))
-    local distanceLabel = makeLabel("DistanceLabel", UDim2.new(0, 0, 1/4, 0), Color3.new(235/255, 168/255, 52/255))
-    local distanceMetersLabel = makeLabel("DistanceInMetersLabel", UDim2.new(0, 0, 2/4, 0), Color3.new(204/255, 52/255, 235/255))
+    local hpLabel = makeLabel("HPLabel", UDim2.new(0, 0, 0, 0), Color3.fromRGB(52, 235, 155))
+    local nameLabel = makeLabel("NameLabel", UDim2.new(0, 0, 1/4, 0), Color3.fromRGB(235, 168, 52))
+    local distanceLabel = makeLabel("DistanceLabel", UDim2.new(0, 0, 2/4, 0), Color3.fromRGB(204, 52, 235))
 
-    local connection
-    connection = runService.RenderStepped:Connect(function()
-        local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    local conn
+    conn = RunService.Heartbeat:Connect(function()
+        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         local targetHRP = character and character:FindFirstChild("HumanoidRootPart")
-        if not (myHRP and targetHRP and distanceLabel and distanceLabel.Parent) then
-            connection:Disconnect()
+        if not (myHRP and targetHRP and nameLabel and nameLabel.Parent) then
+            if conn then conn:Disconnect() end
+            if billboard then billboard:Destroy() end
             return
         end
 
-        local dist = (myHRP.Position - targetHRP.Position).Magnitude
-        local visible = dist <= 1200 and isBillboardVisible
+        local distStuds = (myHRP.Position - targetHRP.Position).Magnitude
+        local distMeters = distStuds / 3.571
 
+        local visible = distStuds <= 1200
         hpLabel.Visible = visible
+        nameLabel.Visible = visible
         distanceLabel.Visible = visible
-        distanceMetersLabel.Visible = visible
 
         if visible then
-            distanceLabel.Text = "Distance: " .. math.round(dist) .. "m"
-            distanceMetersLabel.Text = "Distance: " .. math.round(dist) .. " meters"
             local humanoid = character:FindFirstChildOfClass("Humanoid")
             if humanoid then
                 hpLabel.Text = "HP: " .. math.floor(humanoid.Health)
             end
+            nameLabel.Text = "Name: " .. character.Name
+            distanceLabel.Text = "Distance: " .. math.floor(distMeters) .. "m"
 
             local minSize, maxSize, growStart, maxDist = 14, 16, 400, 1200
-            local t = math.clamp((dist - growStart) / (maxDist - growStart), 0, 1)
+            local t = math.clamp((distStuds - growStart) / (maxDist - growStart), 0, 1)
             local size = minSize + t * (maxSize - minSize)
 
             hpLabel.TextSize = size
+            nameLabel.TextSize = size
             distanceLabel.TextSize = size
-            distanceMetersLabel.TextSize = size
         end
     end)
 
-    billboardData[targetPlayer] = {
-        billboard = billboard,
-        conn = connection
-    }
+    character.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            if conn then conn:Disconnect() end
+            if billboard then billboard:Destroy() end
+        end
+    end)
 end
+
+--model looping yeaa
+for _, model in ipairs(workspace:GetChildren()) do
+    if model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") and model ~= LocalPlayer.Character then
+        createBillboard(model)
+    end
+end
+
+-- Auto-attach when new models are added:
+workspace.ChildAdded:Connect(function(child)
+    if child:IsA("Model") and child:FindFirstChild("HumanoidRootPart") and child ~= LocalPlayer.Character then
+        createBillboard(child)
+    end
+end)
+
 
 ------------------------------------------------------------
 -- Gun changerr (f3) :3ccccc
@@ -147,30 +172,64 @@ end)
 --mmmm so gooood lightning bro
 
 local function NightTime()
-    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-    game.Lighting.Brightness = 0
-    game.Lighting.ClockTime = 0
-    game.Lighting.TimeOfDay = 000
-
-    game.Lighting.ColorCorrection.Saturation = 0
-    game.Lighting.ColorCorrection.TintColor = color3.fromRGB(31, 112, 41)
-
-end
-
-
-
-
-
-local function cleanupPlayer(targetPlayer)
-    if billboardData[targetPlayer] then
-        local data = billboardData[targetPlayer]
-        if data.conn then data.conn:Disconnect() end
-        if data.billboard and data.billboard.Parent then
-            data.billboard:Destroy()
-        end
-        billboardData[targetPlayer] = nil
+    local atmosphere = game.Lighting:FindFirstChildOfClass("Atmosphere")
+    
+    if atmosphere then
+        atmosphere:Destroy()
     end
 end
+
+--SCOPE CHANGER (F4)
+
+
+local gunInventory = player:WaitForChild("GunInventory")
+local attachmentList = {
+    "ACOG",
+    "RedDot",
+    "SniperScope8x",
+    "MicroReflex",
+    "ACOGww2",
+    "EOtech 512",
+    "Holo"
+}
+
+local currentIndex = {}
+
+local function changeAttachment(gunSlot)
+    local attachmentMuzzle = gunSlot.Value:FindFirstChild("AttachmentMuzzle")
+    if not attachmentMuzzle then
+        print("AttachmentMuzzle not found in", gunSlot.Name)
+        return
+    end
+
+    local attachmentName = attachmentList[currentIndex[gunSlot.Name]]
+    print("Applying attachment:", attachmentName)
+
+    local attachment = ReplicatedStorage.Assets.Attachments:FindFirstChild(attachmentName)
+    if not attachment then
+        print("Attachment not found in ReplicatedStorage:", attachmentName)
+        return
+    end
+
+    attachmentMuzzle.Value = attachment
+    print("Applied attachment:", attachmentName)
+end
+
+local function saveSlotAttachment(gunSlot)
+    local slotName = gunSlot.Name
+    if not currentIndex[slotName] then
+        currentIndex[slotName] = 1
+    end
+    
+    currentIndex[slotName] = (currentIndex[slotName] % #attachmentList) + 1
+    print("Updated index for", slotName, "to", currentIndex[slotName])
+end
+
+
+
+
+
+
 
 local function onCharacterAdded(targetPlayer, character)
     cleanupPlayer(targetPlayer)
@@ -222,27 +281,37 @@ end
 
 
 
-userInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
 
-	if input.KeyCode == Enum.KeyCode.F1 then
-		isBillboardVisible = not isBillboardVisible
+    if input.KeyCode == Enum.KeyCode.F1 then
+        isBillboardVisible = not isBillboardVisible
+        print("Pressed F1")
 
-	elseif input.KeyCode == Enum.KeyCode.F2 then
-		NightTime()
+    elseif input.KeyCode == Enum.KeyCode.F2 then
+        NightTime()
 
     elseif input.KeyCode == Enum.KeyCode.F3 then
         currentColorIndex = (currentColorIndex % #colorList) + 1
-        autoChangeEnabled = true  -- enable auto apply
+        autoChangeEnabled = true
         updateWeaponAppearance()
-    
-	end
+
+    elseif input.KeyCode == Enum.KeyCode.F4 then
+        for _, gunSlot in pairs(gunInventory:GetChildren()) do
+            if gunSlot:IsA("IntValue") then
+                saveSlotAttachment(gunSlot)
+                changeAttachment(gunSlot)
+            end
+        end
+    end
 end)
 
 
 
 ------------------------------------------------------------
+
 print("guhhh")
 print("F1 esp")
-print("F2 tween??")
-print("F3 = change weapon")
+print("F2 night")
+print("F3 change weapon")
+print("Shuffle thru scopes grr")
