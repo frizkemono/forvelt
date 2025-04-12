@@ -1,0 +1,248 @@
+local player = game.Players.LocalPlayer
+local runService = game:GetService("RunService")
+local userInputService = game:GetService("UserInputService")
+local tweenService = game:GetService("TweenService")
+
+local billboardData = {}
+local isBillboardVisible = true
+local currentColorIndex = 3
+local colorList = {
+    BrickColor.new("Neon orange"),-- add any colors you want. just not fromRGB but a brickcolor. if you dont know what they are look it up.
+    BrickColor.new("New Yeller"),
+    BrickColor.new("Magenta"),
+    BrickColor.new("Bright bluish green"),
+    BrickColor.new("Lapis"),
+    BrickColor.new("Maroon"),--make sure you have a "," at the end or it will break
+}
+local meshColorMap = {}
+local autoChangeEnabled = false
+
+------------------------------------------------------------
+-- Esp (it's ASS)
+------------------------------------------------------------
+local function createBillboard(character, targetPlayer)
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "DistanceBillboard"
+    billboard.Size = UDim2.new(0, 100, 0, 75)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = hrp
+    billboard.Parent = character
+
+    local function makeLabel(name, pos, color)
+        local lbl = Instance.new("TextLabel")
+        lbl.Name = name
+        lbl.Size = UDim2.new(1, 0, 1/3, 0)
+        lbl.Position = pos
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = color
+        lbl.TextScaled = false
+        lbl.Font = Enum.Font.Bodoni
+        lbl.TextSize = 14
+        lbl.Visible = true
+        lbl.Parent = billboard
+        return lbl
+    end
+
+    local hpLabel = makeLabel("HPLabel", UDim2.new(0, 0, 0, 0), Color3.new(52/255, 235/255, 155/255))
+    local distanceLabel = makeLabel("DistanceLabel", UDim2.new(0, 0, 1/4, 0), Color3.new(235/255, 168/255, 52/255))
+    local distanceMetersLabel = makeLabel("DistanceInMetersLabel", UDim2.new(0, 0, 2/4, 0), Color3.new(204/255, 52/255, 235/255))
+
+    local connection
+    connection = runService.RenderStepped:Connect(function()
+        local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = character and character:FindFirstChild("HumanoidRootPart")
+        if not (myHRP and targetHRP and distanceLabel and distanceLabel.Parent) then
+            connection:Disconnect()
+            return
+        end
+
+        local dist = (myHRP.Position - targetHRP.Position).Magnitude
+        local visible = dist <= 1200 and isBillboardVisible
+
+        hpLabel.Visible = visible
+        distanceLabel.Visible = visible
+        distanceMetersLabel.Visible = visible
+
+        if visible then
+            distanceLabel.Text = "Distance: " .. math.round(dist) .. "m"
+            distanceMetersLabel.Text = "Distance: " .. math.round(dist) .. " meters"
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                hpLabel.Text = "HP: " .. math.floor(humanoid.Health)
+            end
+
+            local minSize, maxSize, growStart, maxDist = 14, 16, 400, 1200
+            local t = math.clamp((dist - growStart) / (maxDist - growStart), 0, 1)
+            local size = minSize + t * (maxSize - minSize)
+
+            hpLabel.TextSize = size
+            distanceLabel.TextSize = size
+            distanceMetersLabel.TextSize = size
+        end
+    end)
+
+    billboardData[targetPlayer] = {
+        billboard = billboard,
+        conn = connection
+    }
+end
+
+------------------------------------------------------------
+-- Gun changerr (f3) :3ccccc
+------------------------------------------------------------
+
+
+local function cleanSurfaceAppearance(surfaceAppearance)
+    surfaceAppearance.ColorMap = ""
+    surfaceAppearance.MetalnessMap = ""
+    surfaceAppearance.NormalMap = ""
+    surfaceAppearance.RoughnessMap = ""
+    surfaceAppearance.AlphaMode = Enum.AlphaMode.Overlay
+end
+
+local function updateWeaponAppearance(tween)
+    local weapon = workspace.CurrentCamera:FindFirstChild("CurrentWeapon")
+    if not weapon then return end
+
+    for _, mesh in ipairs(weapon:GetDescendants()) do
+        if mesh:IsA("MeshPart") then
+            local sa = mesh:FindFirstChildOfClass("SurfaceAppearance")
+            if sa then cleanSurfaceAppearance(sa) end
+
+            meshColorMap[mesh.Name] = currentColorIndex
+            local color = colorList[currentColorIndex].Color
+            mesh.Transparency = 0.56
+            mesh.BrickColor = colorList[currentColorIndex]
+
+            if tween then
+                tweenService:Create(mesh, TweenInfo.new(0.6), {
+                    Color = color,
+                    Transparency = 0.56,
+                }):Play()
+            else
+                mesh.Color = color
+            end
+        end
+    end
+end
+
+
+local lastWeapon = nil
+runService.Heartbeat:Connect(function()
+    if not autoChangeEnabled then return end
+
+    local weapon = workspace.CurrentCamera:FindFirstChild("CurrentWeapon")
+    if weapon and weapon ~= lastWeapon then
+        lastWeapon = weapon
+        updateWeaponAppearance(false)
+        print(lastWeapon)
+    end
+end)
+
+
+--mmmm so gooood lightning bro
+
+local function NightTime()
+    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    game.Lighting.Brightness = 0
+    game.Lighting.ClockTime = 0
+    game.Lighting.TimeOfDay = 000
+
+    game.Lighting.ColorCorrection.Saturation = 0
+    game.Lighting.ColorCorrection.TintColor = color3.fromRGB(31, 112, 41)
+
+end
+
+
+
+
+
+local function cleanupPlayer(targetPlayer)
+    if billboardData[targetPlayer] then
+        local data = billboardData[targetPlayer]
+        if data.conn then data.conn:Disconnect() end
+        if data.billboard and data.billboard.Parent then
+            data.billboard:Destroy()
+        end
+        billboardData[targetPlayer] = nil
+    end
+end
+
+local function onCharacterAdded(targetPlayer, character)
+    cleanupPlayer(targetPlayer)
+    createBillboard(character, targetPlayer)
+end
+
+local function onPlayerAdded(targetPlayer)
+    if targetPlayer == player then return end
+    if targetPlayer.Character then onCharacterAdded(targetPlayer, targetPlayer.Character) end
+    targetPlayer.CharacterAdded:Connect(function(char) onCharacterAdded(targetPlayer, char) end)
+    targetPlayer.AncestryChanged:Connect(function(_, parent)
+        if not parent then cleanupPlayer(targetPlayer) end
+    end)
+end
+
+for _, p in ipairs(game.Players:GetPlayers()) do onPlayerAdded(p) end
+game.Players.PlayerAdded:Connect(onPlayerAdded)
+game.Players.PlayerRemoving:Connect(cleanupPlayer)
+
+
+
+
+local function applyColorToMesh(mesh, colorIndex, tween)
+    local color = colorList[colorIndex]
+    meshColorMap[mesh.Name] = colorIndex
+    mesh.Transparency = 0.56
+
+    if tween then
+        tweenService:Create(mesh, TweenInfo.new(0.6), {
+            Color = color.Color,
+            BrickColor = color,
+            Transparency = 0.56,
+        }):Play()
+    else
+        mesh.BrickColor = color
+    end
+end
+
+local function applyToWeapon(weapon, tween)
+    for _, mesh in ipairs(weapon:GetDescendants()) do
+        if mesh:IsA("MeshPart") then
+            local sa = mesh:FindFirstChildOfClass("SurfaceAppearance")
+            if sa then cleanSurfaceAppearance(sa) end
+            local colorIndex = (meshColorMap[mesh.Name] or currentColorIndex)
+            applyColorToMesh(mesh, colorIndex, tween)
+        end
+    end
+end
+
+
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+
+	if input.KeyCode == Enum.KeyCode.F1 then
+		isBillboardVisible = not isBillboardVisible
+
+	elseif input.KeyCode == Enum.KeyCode.F2 then
+		NightTime()
+
+    elseif input.KeyCode == Enum.KeyCode.F3 then
+        currentColorIndex = (currentColorIndex % #colorList) + 1
+        autoChangeEnabled = true  -- enable auto apply
+        updateWeaponAppearance()
+    
+	end
+end)
+
+
+
+------------------------------------------------------------
+print("guhhh")
+print("F1 esp")
+print("F2 tween??")
+print("F3 = change weapon")
