@@ -2,8 +2,6 @@ local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 
 local billboardData = {}
 local isBillboardVisible = true
@@ -179,57 +177,20 @@ local function NightTime()
     end
 end
 
---SCOPE CHANGER (F4)
 
 
-local gunInventory = player:WaitForChild("GunInventory")
-local attachmentList = {
-    "ACOG",
-    "RedDot",
-    "SniperScope8x",
-    "MicroReflex",
-    "ACOGww2",
-    "EOtech 512",
-    "Holo"
-}
 
-local currentIndex = {}
 
-local function changeAttachment(gunSlot)
-    local attachmentMuzzle = gunSlot.Value:FindFirstChild("AttachmentMuzzle")
-    if not attachmentMuzzle then
-        print("AttachmentMuzzle not found in", gunSlot.Name)
-        return
+local function cleanupPlayer(targetPlayer)
+    if billboardData[targetPlayer] then
+        local data = billboardData[targetPlayer]
+        if data.conn then data.conn:Disconnect() end
+        if data.billboard and data.billboard.Parent then
+            data.billboard:Destroy()
+        end
+        billboardData[targetPlayer] = nil
     end
-
-    local attachmentName = attachmentList[currentIndex[gunSlot.Name]]
-    print("Applying attachment:", attachmentName)
-
-    local attachment = ReplicatedStorage.Assets.Attachments:FindFirstChild(attachmentName)
-    if not attachment then
-        print("Attachment not found in ReplicatedStorage:", attachmentName)
-        return
-    end
-
-    attachmentMuzzle.Value = attachment
-    print("Applied attachment:", attachmentName)
 end
-
-local function saveSlotAttachment(gunSlot)
-    local slotName = gunSlot.Name
-    if not currentIndex[slotName] then
-        currentIndex[slotName] = 1
-    end
-    
-    currentIndex[slotName] = (currentIndex[slotName] % #attachmentList) + 1
-    print("Updated index for", slotName, "to", currentIndex[slotName])
-end
-
-
-
-
-
-
 
 local function onCharacterAdded(targetPlayer, character)
     cleanupPlayer(targetPlayer)
@@ -281,29 +242,22 @@ end
 
 
 
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
 
-    if input.KeyCode == Enum.KeyCode.F1 then
-        isBillboardVisible = not isBillboardVisible
-        print("Pressed F1")
+	if input.KeyCode == Enum.KeyCode.F1 then
+		isBillboardVisible = not isBillboardVisible
+        print("pressed f1")
 
-    elseif input.KeyCode == Enum.KeyCode.F2 then
-        NightTime()
+	elseif input.KeyCode == Enum.KeyCode.F2 then
+		NightTime()
 
     elseif input.KeyCode == Enum.KeyCode.F3 then
         currentColorIndex = (currentColorIndex % #colorList) + 1
         autoChangeEnabled = true
         updateWeaponAppearance()
-
-    elseif input.KeyCode == Enum.KeyCode.F4 then
-        for _, gunSlot in pairs(gunInventory:GetChildren()) do
-            if gunSlot:IsA("IntValue") then
-                saveSlotAttachment(gunSlot)
-                changeAttachment(gunSlot)
-            end
-        end
-    end
+    
+	end
 end)
 
 
@@ -314,4 +268,3 @@ print("guhhh")
 print("F1 esp")
 print("F2 night")
 print("F3 change weapon")
-print("Shuffle thru scopes grr")
