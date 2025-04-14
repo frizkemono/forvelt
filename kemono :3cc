@@ -2,18 +2,21 @@ local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
 
 local billboardData = {}
 local isBillboardVisible = true
 local currentColorIndex = 3
-local colorList = {
-    BrickColor.new("Neon orange"),
-    BrickColor.new("New Yeller"),
-    BrickColor.new("Magenta"),
-    BrickColor.new("Bright bluish green"),
-    BrickColor.new("Lapis"),
-    BrickColor.new("Maroon"),
+local colorList = {                             --for mesh changer
+    BrickColor.new("Gold"),
+    BrickColor.new("Tawny"),
+    BrickColor.new("Med. reddish violet"),
+    BrickColor.new("Lemon metalic"),
+    BrickColor.new("Dark blue"),
+    BrickColor.new("Pastel violet"),
     BrickColor.new("Black"),
+    BrickColor.new("Pastel brown")   --default
 }
 local meshColorMap = {}
 local autoChangeEnabled = false
@@ -21,9 +24,6 @@ local autoChangeEnabled = false
 ------------------------------------------------------------
 -- Esp (it's ASS)
 ------------------------------------------------------------
-local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
-
 local function createBillboard(character)
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
@@ -35,6 +35,7 @@ local function createBillboard(character)
     billboard.AlwaysOnTop = true
     billboard.Adornee = hrp
     billboard.Parent = character
+
 
     local function makeLabel(name, pos, color)
         local lbl = Instance.new("TextLabel")
@@ -81,7 +82,7 @@ local function createBillboard(character)
             nameLabel.Text = "Name: " .. character.Name
             distanceLabel.Text = "Distance: " .. math.floor(distMeters) .. "m"
 
-            local minSize, maxSize, growStart, maxDist = 14, 16, 400, 1200
+            local minSize, maxSize, growStart, maxDist = 14, 16, 400, 2200
             local t = math.clamp((distStuds - growStart) / (maxDist - growStart), 0, 1)
             local size = minSize + t * (maxSize - minSize)
 
@@ -99,14 +100,12 @@ local function createBillboard(character)
     end)
 end
 
---model looping yeaa
 for _, model in ipairs(workspace:GetChildren()) do
     if model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") and model ~= LocalPlayer.Character then
         createBillboard(model)
     end
 end
 
--- Auto-attach when new models are added:
 workspace.ChildAdded:Connect(function(child)
     if child:IsA("Model") and child:FindFirstChild("HumanoidRootPart") and child ~= LocalPlayer.Character then
         createBillboard(child)
@@ -178,6 +177,90 @@ local function NightTime()
 end
 
 
+local gunUI = nil
+local gunHeartbeatConn = nil
+
+local function toggleGunInventoryUI()
+    if gunUI then
+        gunUI:Destroy()
+        gunUI = nil
+        if gunHeartbeatConn then
+            gunHeartbeatConn:Disconnect()
+            gunHeartbeatConn = nil
+        end
+        return
+    end
+
+    gunUI = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+    gunUI.Name = "GunInventoryViewer"
+    gunUI.ResetOnSpawn = false
+
+    local frame = Instance.new("Frame", gunUI)
+    frame.Size = UDim2.new(0, 200, 0, 120)
+    frame.Position = UDim2.new(0.5, -100, 0.75, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0, 10)
+
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Color = Color3.fromRGB(170, 0, 255)
+    stroke.Thickness = 2
+
+    local labels = {}
+    for i = 1, 4 do
+        local lbl = Instance.new("TextLabel", frame)
+        lbl.Size = UDim2.new(1, -10, 0.25, -2)
+        lbl.Position = UDim2.new(0, 5, 0.25 * (i - 1), 0)
+        lbl.BackgroundTransparency = 1
+        lbl.TextColor3 = Color3.new(1, 1, 1)
+        lbl.Text = "..."
+        lbl.Font = Enum.Font.SourceSans
+        lbl.TextSize = 16
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        table.insert(labels, lbl)
+    end
+
+    gunHeartbeatConn = RunService.Heartbeat:Connect(function()
+        local cam = workspace.CurrentCamera
+        local unitRay = cam.CFrame.LookVector
+        local origin = cam.CFrame.Position
+
+        local ray = Ray.new(origin, unitRay * 500)
+        local part, pos = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character}, false, true)
+
+        local targetPlayer = nil
+        if part and part:IsDescendantOf(workspace) then
+            local model = part:FindFirstAncestorOfClass("Model")
+            if model and model:FindFirstChild("Humanoid") then
+                targetPlayer = game.Players:GetPlayerFromCharacter(model)
+            end
+        end
+
+        if targetPlayer and targetPlayer ~= LocalPlayer then
+            labels[1].Text = "Player: " .. targetPlayer.Name
+
+            local inventory = targetPlayer:FindFirstChild("GunInventory")
+            if inventory then
+                for i, slot in ipairs({"Slot1", "Slot2", "Slot3"}) do
+                    local val = inventory:FindFirstChild(slot)
+                    labels[i+1].Text = slot .. ": " .. (val and val.Value or "None")
+                end
+            else
+                labels[2].Text = "Slot1: None"
+                labels[3].Text = "Slot2: None"
+                labels[4].Text = "Slot3: None"
+            end
+        else
+            for i, lbl in ipairs(labels) do
+                lbl.Text = i == 1 and "No player" or "..."
+            end
+        end
+    end)
+end
 
 
 
@@ -247,7 +330,6 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
 
 	if input.KeyCode == Enum.KeyCode.F1 then
 		isBillboardVisible = not isBillboardVisible
-        print("pressed f1")
 
 	elseif input.KeyCode == Enum.KeyCode.F2 then
 		NightTime()
@@ -256,15 +338,17 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
         currentColorIndex = (currentColorIndex % #colorList) + 1
         autoChangeEnabled = true
         updateWeaponAppearance()
-    
+
+    elseif input.KeyCode == Enum.KeyCode.F4 then
+        toggleGunInventoryUI()
 	end
 end)
 
 
-
 ------------------------------------------------------------
 
-print("guhhh")
+print("1.0.2 added inv viewer")
 print("F1 esp")
-print("F2 night")
-print("F3 change weapon")
+print("F2 no fog")
+print("F3 change weapon mesh color thing idk press it multiple times")
+print("F4 to toggle inv view lool")
