@@ -8,15 +8,16 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local billboardData = {}
 local isBillboardVisible = true
 local currentColorIndex = 3
-local colorList = {                             --for mesh changer
-    BrickColor.new("Gold"),
+local colorList = {
+    BrickColor.new("Dark nougat"),
     BrickColor.new("Tawny"),
-    BrickColor.new("Med. reddish violet"),
-    BrickColor.new("Lemon metalic"),
-    BrickColor.new("Dark blue"),
+    BrickColor.new("Tr. Red"),
+    BrickColor.new("Tr. Flu. Reddish orange"),
+    BrickColor.new("Pastel Blue"),
     BrickColor.new("Pastel violet"),
     BrickColor.new("Black"),
-    BrickColor.new("Pastel brown")   --default
+    BrickColor.new("Pastel brown"),
+    BrickColor.new("Sand green"),
 }
 local meshColorMap = {}
 local autoChangeEnabled = false
@@ -24,17 +25,17 @@ local autoChangeEnabled = false
 ------------------------------------------------------------
 -- Esp (it's ASS)
 ------------------------------------------------------------
-local function createBillboard(character)
+local function PlayerEsp(character)
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
 
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "DistanceBillboard"
-    billboard.Size = UDim2.new(0, 100, 0, 75)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Adornee = hrp
-    billboard.Parent = character
+    local billboardesp = Instance.new("BillboardGui")
+    billboardesp.Name = "DistanceBillboard"
+    billboardesp.Size = UDim2.new(0, 100, 0, 75)
+    billboardesp.StudsOffset = Vector3.new(0, 3, 0)
+    billboardesp.AlwaysOnTop = true
+    billboardesp.Adornee = hrp
+    billboardesp.Parent = character
 
 
     local function makeLabel(name, pos, color)
@@ -69,7 +70,7 @@ local function createBillboard(character)
         local distStuds = (myHRP.Position - targetHRP.Position).Magnitude
         local distMeters = distStuds / 3.571
 
-        local visible = distStuds <= 1200
+        local visible = distStuds <= 2200
         hpLabel.Visible = visible
         nameLabel.Visible = visible
         distanceLabel.Visible = visible
@@ -166,7 +167,64 @@ runService.Heartbeat:Connect(function()
 end)
 
 
---mmmm so gooood lightning bro
+------------------------------------------------------------
+-- car esp (included with esp) :3ccccc
+------------------------------------------------------------
+
+function CarEsp()
+    local RunService = game:GetService("RunService")
+    local Camera = workspace.CurrentCamera
+    local Player = game.Players.LocalPlayer
+
+
+    for _, model in ipairs(workspace:GetDescendants()) do
+        if model:IsA("Model") and model.Name == "WorldModel" and model.PrimaryPart and model.PrimaryPart.Name == "Chassis" then
+            local existingBillboard = model:FindFirstChild("CarDistanceBillboard")
+            if not existingBillboard then
+                local billboard = Instance.new("BillboardGui")
+                billboard.Name = "CarDistanceBillboard"
+                billboard.Adornee = model.PrimaryPart
+                billboard.Size = UDim2.new(0, 200, 0, 50)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                billboard.Parent = model
+                billboard
+
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextStrokeTransparency = 0.5
+                label.Font = Enum.Font.SourceSansBold
+                label.TextScaled = true
+                label.Name = "CarLabel"
+                label.Parent = billboard
+            end
+        end
+    end
+
+    RunService.Heartbeat:Connect(function()
+        for _, model in ipairs(workspace:GetDescendants()) do
+            if model:IsA("Model") and model.Name == "WorldModel" and model.PrimaryPart and model.PrimaryPart.Name == "Chassis" then
+                local billboard = model:FindFirstChild("CarDistanceBillboard")
+                if billboard and billboard:IsA("BillboardGui") then
+                    local label = billboard:FindFirstChild("CarLabel")
+                    if label then
+                        local distance = (Camera.CFrame.Position - model.PrimaryPart.Position).Magnitude
+                        local meters = math.min(distance / 3.571, 2600)  -- correct conversion to meters
+                        label.Text = string.format("Car | %.2f meters", meters)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+
+
+------------------------------------------------------------
+-- nofog
+------------------------------------------------------------
 
 local function NightTime()
     local atmosphere = game.Lighting:FindFirstChildOfClass("Atmosphere")
@@ -176,32 +234,55 @@ local function NightTime()
     end
 end
 
+------------------------------------------------------------
+-- always day inc with nofog  :3ccccc
+------------------------------------------------------------
+local function AlwaysDay()
+    ReplicatedStorage.GameConfig.Settings.Weather.CurrentTimeOverride = 10
+end
 
+------------------------------------------------------------
+--INV VIEW
+------------------------------------------------------------
+local fovCircle = nil
 local gunUI = nil
-local gunHeartbeatConn = nil
+local updateConnection = nil
 
-local function toggleGunInventoryUI()
+function toggleGunInventoryUI()
     if gunUI then
+        if fovCircle then
+            fovCircle:Remove()
+            fovCircle = nil
+        end
+        if updateConnection then
+            updateConnection:Disconnect()
+            updateConnection = nil
+        end
         gunUI:Destroy()
         gunUI = nil
-        if gunHeartbeatConn then
-            gunHeartbeatConn:Disconnect()
-            gunHeartbeatConn = nil
-        end
         return
     end
 
-    gunUI = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+    fovCircle = Drawing.new("Circle")
+    fovCircle.Color = Color3.fromRGB(170, 0, 255)
+    fovCircle.Thickness = 2
+    fovCircle.Radius = 150
+    fovCircle.Filled = false
+    fovCircle.Visible = true
+
+    gunUI = Instance.new("ScreenGui")
     gunUI.Name = "GunInventoryViewer"
+    gunUI.Parent = LocalPlayer:WaitForChild("PlayerGui")
     gunUI.ResetOnSpawn = false
 
-    local frame = Instance.new("Frame", gunUI)
+    local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 200, 0, 120)
     frame.Position = UDim2.new(0.5, -100, 0.75, 0)
     frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     frame.BorderSizePixel = 0
     frame.Active = true
     frame.Draggable = true
+    frame.Parent = gunUI
 
     local corner = Instance.new("UICorner", frame)
     corner.CornerRadius = UDim.new(0, 10)
@@ -224,26 +305,34 @@ local function toggleGunInventoryUI()
         table.insert(labels, lbl)
     end
 
-    gunHeartbeatConn = RunService.Heartbeat:Connect(function()
-        local cam = workspace.CurrentCamera
-        local unitRay = cam.CFrame.LookVector
-        local origin = cam.CFrame.Position
+    updateConnection = RunService.Heartbeat:Connect(function()
+        fovCircle.Position = Vector2.new(Mouse.X, Mouse.Y)
 
-        local ray = Ray.new(origin, unitRay * 500)
-        local part, pos = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character}, false, true)
+        local closestPlayer = nil
+        local closestDistance = fovCircle.Radius
 
-        local targetPlayer = nil
-        if part and part:IsDescendantOf(workspace) then
-            local model = part:FindFirstAncestorOfClass("Model")
-            if model and model:FindFirstChild("Humanoid") then
-                targetPlayer = game.Players:GetPlayerFromCharacter(model)
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local worldPos = player.Character.HumanoidRootPart.Position
+                local screenPos, onScreen = Camera:WorldToViewportPoint(worldPos)
+
+                if onScreen then
+                    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+                    local playerScreenPos = Vector2.new(screenPos.X, screenPos.Y)
+                    local distance = (mousePos - playerScreenPos).Magnitude
+
+                    if distance <= closestDistance then
+                        closestDistance = distance
+                        closestPlayer = player
+                    end
+                end
             end
         end
 
-        if targetPlayer and targetPlayer ~= LocalPlayer then
-            labels[1].Text = "Player: " .. targetPlayer.Name
+        if closestPlayer then
+            labels[1].Text = "Player: " .. closestPlayer.Name
 
-            local inventory = targetPlayer:FindFirstChild("GunInventory")
+            local inventory = closestPlayer:FindFirstChild("GunInventory")
             if inventory then
                 for i, slot in ipairs({"Slot1", "Slot2", "Slot3"}) do
                     local val = inventory:FindFirstChild(slot)
@@ -262,7 +351,7 @@ local function toggleGunInventoryUI()
     end)
 end
 
-
+--other cleanup shit
 
 local function cleanupPlayer(targetPlayer)
     if billboardData[targetPlayer] then
@@ -324,15 +413,17 @@ local function applyToWeapon(weapon, tween)
 end
 
 
-
+--toggles
 userInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 
 	if input.KeyCode == Enum.KeyCode.F1 then
 		isBillboardVisible = not isBillboardVisible
+        CarEsp()
 
 	elseif input.KeyCode == Enum.KeyCode.F2 then
 		NightTime()
+        AlwaysDay()
 
     elseif input.KeyCode == Enum.KeyCode.F3 then
         currentColorIndex = (currentColorIndex % #colorList) + 1
@@ -341,14 +432,18 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
 
     elseif input.KeyCode == Enum.KeyCode.F4 then
         toggleGunInventoryUI()
+
+    elseif input.KeyCode == Enum.KeyCode.F5 then
+		ColorRape()
 	end
 end)
 
 
 ------------------------------------------------------------
 
-print("1.0.2 added inv viewer")
+print("1.0.2 fixed inv view?? idk not tested yet")
 print("F1 esp")
 print("F2 no fog")
 print("F3 change weapon mesh color thing idk press it multiple times")
 print("F4 to toggle inv view lool")
+print("F5 to set fov to 120 :) ")
