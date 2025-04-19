@@ -251,14 +251,6 @@ local function colorrap()
 end
 
 
-------------------------------------------------------------
--- always day inc with nofog  :3ccccc
-------------------------------------------------------------
-local function AlwaysDay()
-    sets.Weather.CurrentTimeOverride = 10
-end
-
-
 --other cleanup shit
 
 local function cleanupPlayer(targetPlayer)
