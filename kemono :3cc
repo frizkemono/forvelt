@@ -274,6 +274,7 @@ frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = screenGui
+frame.ZIndex = 999
 
 local corner = Instance.new("UICorner", frame)
 corner.CornerRadius = UDim.new(0, 8)
