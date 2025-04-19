@@ -36,7 +36,7 @@ local function PlayerEsp(character)
     billboardesp.AlwaysOnTop = true
     billboardesp.Adornee = hrp
     billboardesp.Parent = character
-    billboardesp.visible = true
+    billboardesp.enabled = true
 
 
     local function makeLabel(name, pos, color)
