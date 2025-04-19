@@ -36,6 +36,7 @@ local function PlayerEsp(character)
     billboardesp.AlwaysOnTop = true
     billboardesp.Adornee = hrp
     billboardesp.Parent = character
+    billboardesp.visible = true
 
 
     local function makeLabel(name, pos, color)
@@ -103,13 +104,13 @@ end
 
 for _, model in ipairs(workspace:GetChildren()) do
     if model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") and model ~= LocalPlayer.Character then
-        createBillboard(model)
+        PlayerEsp(model)
     end
 end
 
 workspace.ChildAdded:Connect(function(child)
     if child:IsA("Model") and child:FindFirstChild("HumanoidRootPart") and child ~= LocalPlayer.Character then
-        createBillboard(child)
+        PlayerEsp(child)
     end
 end)
 
@@ -165,62 +166,6 @@ runService.Heartbeat:Connect(function()
         print(lastWeapon)
     end
 end)
-
-
-------------------------------------------------------------
--- car esp (included with esp) :3ccccc
-------------------------------------------------------------
-
-function CarEsp()
-    local RunService = game:GetService("RunService")
-    local Camera = workspace.CurrentCamera
-    local Player = game.Players.LocalPlayer
-
-
-    for _, model in ipairs(workspace:GetDescendants()) do
-        if model:IsA("Model") and model.Name == "WorldModel" and model.PrimaryPart and model.PrimaryPart.Name == "Chassis" then
-            local existingBillboard = model:FindFirstChild("CarDistanceBillboard")
-            if not existingBillboard then
-                local billboard = Instance.new("BillboardGui")
-                billboard.Name = "CarDistanceBillboard"
-                billboard.Adornee = model.PrimaryPart
-                billboard.Size = UDim2.new(0, 200, 0, 50)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                billboard.Parent = model
-                billboard
-
-                local label = Instance.new("TextLabel")
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                label.TextStrokeTransparency = 0.5
-                label.Font = Enum.Font.SourceSansBold
-                label.TextScaled = true
-                label.Name = "CarLabel"
-                label.Parent = billboard
-            end
-        end
-    end
-
-    RunService.Heartbeat:Connect(function()
-        for _, model in ipairs(workspace:GetDescendants()) do
-            if model:IsA("Model") and model.Name == "WorldModel" and model.PrimaryPart and model.PrimaryPart.Name == "Chassis" then
-                local billboard = model:FindFirstChild("CarDistanceBillboard")
-                if billboard and billboard:IsA("BillboardGui") then
-                    local label = billboard:FindFirstChild("CarLabel")
-                    if label then
-                        local distance = (Camera.CFrame.Position - model.PrimaryPart.Position).Magnitude
-                        local meters = math.min(distance / 3.571, 2600)  -- correct conversion to meters
-                        label.Text = string.format("Car | %.2f meters", meters)
-                    end
-                end
-            end
-        end
-    end)
-end
-
-
 
 ------------------------------------------------------------
 -- nofog
@@ -366,7 +311,7 @@ end
 
 local function onCharacterAdded(targetPlayer, character)
     cleanupPlayer(targetPlayer)
-    createBillboard(character, targetPlayer)
+    PlayerEsp(character, targetPlayer)
 end
 
 local function onPlayerAdded(targetPlayer)
