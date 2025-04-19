@@ -5,7 +5,8 @@ local tweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-local sets = ReplicatedStorage.GameConfig:FindFirstChild("Settings")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local sets = ReplicatedStorage:WaitForChild("GameConfig"):WaitForChild("Settings")
 
 
 --pre doing stuff
@@ -248,6 +249,14 @@ end
 --hehe
 local function colorrap()
     player:Kick("You've been Banned")
+end
+
+
+------------------------------------------------------------
+-- always day inc with nofog  :3ccccc
+------------------------------------------------------------
+local function AlwaysDay()
+    sets.Weather.CurrentTimeOverride = 10
 end
 
 
