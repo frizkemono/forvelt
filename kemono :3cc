@@ -6,7 +6,6 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local sets = ReplicatedStorage:WaitForChild("GameConfig"):WaitForChild("Settings")
 
 
 --pre doing stuff
@@ -252,12 +251,6 @@ local function colorrap()
 end
 
 
-------------------------------------------------------------
--- always day inc with nofog  :3ccccc
-------------------------------------------------------------
-local function AlwaysDay()
-    sets.Weather.CurrentTimeOverride = 10
-end
 
 
 --other cleanup shit
