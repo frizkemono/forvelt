@@ -4,7 +4,11 @@ local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local sets = ReplicatedStorage.GameConfig:FindFirstChild("Settings")
 
+
+--pre doing stuff
 local billboardData = {}
 local isBillboardVisible = true
 local currentColorIndex = 3
@@ -50,7 +54,7 @@ local function PlayerEsp(character)
         lbl.Font = Enum.Font.Bodoni
         lbl.TextSize = 14
         lbl.Visible = true
-        lbl.Parent = billboard
+        lbl.Parent = billboardesp
         return lbl
     end
 
@@ -112,6 +116,68 @@ workspace.ChildAdded:Connect(function(child)
     if child:IsA("Model") and child:FindFirstChild("HumanoidRootPart") and child ~= LocalPlayer.Character then
         PlayerEsp(child)
     end
+end)
+
+------------------------------------------------------------
+-- Aimbot?? (Chat-GPT)
+------------------------------------------------------------
+
+
+local FOV_RADIUS = 70
+local AIM_KEY = Enum.UserInputType.MouseButton2
+local function GetMousePosition()
+	return UserInputService:GetMouseLocation() - Vector2.new(0, 36) -- Adjust for topbar
+end
+
+-- Setup FOV circle
+local FOV_CIRCLE = Drawing.new("Circle")
+FOV_CIRCLE.Radius = FOV_RADIUS
+FOV_CIRCLE.Thickness = 1
+FOV_CIRCLE.Filled = false
+FOV_CIRCLE.Transparency = 1
+FOV_CIRCLE.Color = Color3.fromRGB(255, 66, 214)
+FOV_CIRCLE.Visible = true
+
+RunService.RenderStepped:Connect(function()
+	FOV_CIRCLE.Position = GetMousePosition()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed or input.userInputService ~= AIM_KEY then return end
+
+	local mousePos = GetMousePosition()
+	local closestChar = nil
+	local closestDist = FOV_RADIUS
+
+    for _, model in ipairs(workspace:GetChildren()) do
+		if Players:FindFirstChild(model.Name) then
+			local worldChar = model:FindFirstChild("WorldCharacter")
+			if worldChar and worldChar:FindFirstChild("Head") then
+				local head = worldChar.Head
+				local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+
+				if onScreen then
+					local headPos = Vector2.new(screenPos.X, screenPos.Y)
+					local dist = (mousePos - headPos).Magnitude
+
+					if dist < closestDist then
+						closestDist = dist
+						closestChar = head
+					end
+				end
+			end
+		end
+	end
+
+	if closestChar then
+		local head = closestChar:FindFirstChild("Head")
+		if head then
+			local screenPos, visible = Camera:WorldToViewportPoint(head.Position)
+			if visible then
+                print("https://discord.gg/Tg9uwfGTms")
+			end
+		end
+	end
 end)
 
 
@@ -179,124 +245,20 @@ local function NightTime()
     end
 end
 
+--hehe
+local function colorrap()
+    player:Kick("You've been Banned")
+end
+
+
 ------------------------------------------------------------
 -- always day inc with nofog  :3ccccc
 ------------------------------------------------------------
 local function AlwaysDay()
-    ReplicatedStorage.GameConfig.Settings.Weather.CurrentTimeOverride = 10
+    sets.Weather.CurrentTimeOverride = 10
 end
 
-------------------------------------------------------------
---INV VIEW
-------------------------------------------------------------
-local fovCircle = nil
-local gunUI = nil
-local updateConnection = nil
 
-function toggleGunInventoryUI()
-    if gunUI then
-        if fovCircle then
-            fovCircle:Remove()
-            fovCircle = nil
-        end
-        if updateConnection then
-            updateConnection:Disconnect()
-            updateConnection = nil
-        end
-        gunUI:Destroy()
-        gunUI = nil
-        return
-    end
-
-    fovCircle = Drawing.new("Circle")
-    fovCircle.Color = Color3.fromRGB(170, 0, 255)
-    fovCircle.Thickness = 2
-    fovCircle.Radius = 150
-    fovCircle.Filled = false
-    fovCircle.Visible = true
-
-    gunUI = Instance.new("ScreenGui")
-    gunUI.Name = "GunInventoryViewer"
-    gunUI.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    gunUI.ResetOnSpawn = false
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 200, 0, 120)
-    frame.Position = UDim2.new(0.5, -100, 0.75, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    frame.BorderSizePixel = 0
-    frame.Active = true
-    frame.Draggable = true
-    frame.Parent = gunUI
-
-    local corner = Instance.new("UICorner", frame)
-    corner.CornerRadius = UDim.new(0, 10)
-
-    local stroke = Instance.new("UIStroke", frame)
-    stroke.Color = Color3.fromRGB(170, 0, 255)
-    stroke.Thickness = 2
-
-    local labels = {}
-    for i = 1, 4 do
-        local lbl = Instance.new("TextLabel", frame)
-        lbl.Size = UDim2.new(1, -10, 0.25, -2)
-        lbl.Position = UDim2.new(0, 5, 0.25 * (i - 1), 0)
-        lbl.BackgroundTransparency = 1
-        lbl.TextColor3 = Color3.new(1, 1, 1)
-        lbl.Text = "..."
-        lbl.Font = Enum.Font.SourceSans
-        lbl.TextSize = 16
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        table.insert(labels, lbl)
-    end
-
-    updateConnection = RunService.Heartbeat:Connect(function()
-       local mousePos = UserInputService:GetMouseLocation()
-	fovCircle.Position = Vector2.new(mousePos.X, mousePos.Y)
-
-
-        local closestPlayer = nil
-        local closestDistance = fovCircle.Radius
-
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local worldPos = player.Character.HumanoidRootPart.Position
-                local screenPos, onScreen = Camera:WorldToViewportPoint(worldPos)
-
-                if onScreen then
-                    local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-                    local playerScreenPos = Vector2.new(screenPos.X, screenPos.Y)
-                    local distance = (mousePos - playerScreenPos).Magnitude
-
-                    if distance <= closestDistance then
-                        closestDistance = distance
-                        closestPlayer = player
-                    end
-                end
-            end
-        end
-
-        if closestPlayer then
-            labels[1].Text = "Player: " .. closestPlayer.Name
-
-            local inventory = closestPlayer:FindFirstChild("GunInventory")
-            if inventory then
-                for i, slot in ipairs({"Slot1", "Slot2", "Slot3"}) do
-                    local val = inventory:FindFirstChild(slot)
-                    labels[i+1].Text = slot .. ": " .. (val and val.Value or "None")
-                end
-            else
-                labels[2].Text = "Slot1: None"
-                labels[3].Text = "Slot2: None"
-                labels[4].Text = "Slot3: None"
-            end
-        else
-            for i, lbl in ipairs(labels) do
-                lbl.Text = i == 1 and "No player" or "..."
-            end
-        end
-    end)
-end
 --other cleanup shit
 
 local function cleanupPlayer(targetPlayer)
@@ -377,7 +339,7 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
         updateWeaponAppearance()
 
     elseif input.KeyCode == Enum.KeyCode.F4 then
-        toggleGunInventoryUI()
+        Aimbut()
 
     elseif input.KeyCode == Enum.KeyCode.F5 then
 		ColorRape()
@@ -387,9 +349,8 @@ end)
 
 ------------------------------------------------------------
 
-print("1.0.2 fixed inv view?? idk not tested yet")
+print("1.0.4 fixed always day + cleaned up script")
 print("F1 esp")
-print("F2 no fog")
-print("F3 change weapon mesh color thing idk press it multiple times")
-print("F4 to toggle inv view lool")
-print("F5 to set fov to 120 :) ")
+print("F2 world settings")
+print("F3 gun changer")
+print("F4 aimbot")
