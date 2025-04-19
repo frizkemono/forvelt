@@ -5,7 +5,8 @@ local tweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+
 
 
 --pre doing stuff
@@ -119,69 +120,6 @@ workspace.ChildAdded:Connect(function(child)
 end)
 
 ------------------------------------------------------------
--- Aimbot?? (Chat-GPT)
-------------------------------------------------------------
-
-
-local FOV_RADIUS = 70
-local AIM_KEY = Enum.UserInputType.MouseButton2
-local function GetMousePosition()
-	return UserInputService:GetMouseLocation() - Vector2.new(0, 36) -- Adjust for topbar
-end
-
--- Setup FOV circle
-local FOV_CIRCLE = Drawing.new("Circle")
-FOV_CIRCLE.Radius = FOV_RADIUS
-FOV_CIRCLE.Thickness = 1
-FOV_CIRCLE.Filled = false
-FOV_CIRCLE.Transparency = 1
-FOV_CIRCLE.Color = Color3.fromRGB(255, 66, 214)
-FOV_CIRCLE.Visible = true
-
-RunService.RenderStepped:Connect(function()
-	FOV_CIRCLE.Position = GetMousePosition()
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed or input.userInputService ~= AIM_KEY then return end
-
-	local mousePos = GetMousePosition()
-	local closestChar = nil
-	local closestDist = FOV_RADIUS
-
-    for _, model in ipairs(workspace:GetChildren()) do
-		if Players:FindFirstChild(model.Name) then
-			local worldChar = model:FindFirstChild("WorldCharacter")
-			if worldChar and worldChar:FindFirstChild("Head") then
-				local head = worldChar.Head
-				local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-
-				if onScreen then
-					local headPos = Vector2.new(screenPos.X, screenPos.Y)
-					local dist = (mousePos - headPos).Magnitude
-
-					if dist < closestDist then
-						closestDist = dist
-						closestChar = head
-					end
-				end
-			end
-		end
-	end
-
-	if closestChar then
-		local head = closestChar:FindFirstChild("Head")
-		if head then
-			local screenPos, visible = Camera:WorldToViewportPoint(head.Position)
-			if visible then
-                print("https://discord.gg/Tg9uwfGTms")
-			end
-		end
-	end
-end)
-
-
-------------------------------------------------------------
 -- Gun changerr (f3) :3ccccc
 ------------------------------------------------------------
 
@@ -251,7 +189,16 @@ local function colorrap()
 end
 
 
+------------------------------------------------------------
+-- always day inc with nofog  :3ccccc
+------------------------------------------------------------
+local function AlwaysDay()
+    sets.Weather.CurrentTimeOverride = 10
+end
 
+local function ColorRape()
+    player:kick("i hate niggers too ^W^")
+end
 
 --other cleanup shit
 
@@ -315,29 +262,67 @@ local function applyToWeapon(weapon, tween)
 end
 
 
---toggles
-userInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
 
-	if input.KeyCode == Enum.KeyCode.F1 then
-		isBillboardVisible = not isBillboardVisible
-        CarEsp()
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "CoolHackUI"
+screenGui.ResetOnSpawn = false
 
-	elseif input.KeyCode == Enum.KeyCode.F2 then
-		NightTime()
-        AlwaysDay()
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 250)
+frame.Position = UDim2.new(0.02, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
 
-    elseif input.KeyCode == Enum.KeyCode.F3 then
-        currentColorIndex = (currentColorIndex % #colorList) + 1
-        autoChangeEnabled = true
-        updateWeaponAppearance()
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0, 8)
 
-    elseif input.KeyCode == Enum.KeyCode.F4 then
-        Aimbut()
+local function makeButton(name, text, yPos, color)
+	local button = Instance.new("TextButton")
+	button.Name = name
+	button.Size = UDim2.new(1, -20, 0, 35)
+	button.Position = UDim2.new(0, 10, 0, yPos)
+	button.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Text = text
+	button.Font = Enum.Font.GothamBold
+	button.TextSize = 14
+	button.Parent = frame
 
-    elseif input.KeyCode == Enum.KeyCode.F5 then
-		ColorRape()
-	end
+	local uiCorner = Instance.new("UICorner", button)
+	uiCorner.CornerRadius = UDim.new(0, 6)
+
+	return button
+end
+
+local espButton = makeButton("ESPButton", "Toggle ESP", 10, Color3.fromRGB(52, 235, 155))
+espButton.MouseButton1Click:Connect(function()
+	isBillboardVisible = not isBillboardVisible
+	CarEsp()
+end)
+
+local envButton = makeButton("EnvButton", "Toggle Day/Night", 55, Color3.fromRGB(100, 100, 255))
+envButton.MouseButton1Click:Connect(function()
+	NightTime()
+	AlwaysDay()
+end)
+
+local colorButton = makeButton("ColorButton", "Swap Gun Color", 100, Color3.fromRGB(170, 0, 255))
+colorButton.MouseButton1Click:Connect(function()
+	currentColorIndex = (currentColorIndex % #colorList) + 1
+	autoChangeEnabled = true
+	updateWeaponAppearance()
+end)
+
+local aimButton = makeButton("AimButton", "Enable Aimbot", 145, Color3.fromRGB(255, 200, 0))
+aimButton.MouseButton1Click:Connect(function()
+	Aimbut()
+end)
+
+local kickButton = makeButton("KickButton", "I Hate niggers (Troll)", 190, Color3.fromRGB(255, 66, 66))
+kickButton.MouseButton1Click:Connect(function()
+	ColorRape()
 end)
 
 
