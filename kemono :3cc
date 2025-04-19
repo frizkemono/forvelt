@@ -251,7 +251,9 @@ function toggleGunInventoryUI()
     end
 
     updateConnection = RunService.Heartbeat:Connect(function()
-        fovCircle.Position = Vector2.new(Mouse.X, Mouse.Y)
+       local mousePos = UserInputService:GetMouseLocation()
+	fovCircle.Position = Vector2.new(mousePos.X, mousePos.Y)
+
 
         local closestPlayer = nil
         local closestDistance = fovCircle.Radius
@@ -295,7 +297,6 @@ function toggleGunInventoryUI()
         end
     end)
 end
-
 --other cleanup shit
 
 local function cleanupPlayer(targetPlayer)
