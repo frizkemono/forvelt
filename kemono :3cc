@@ -6,7 +6,8 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = game:GetService("Players").LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
-
+print("Starting")
+Wait(3)
 
 
 --pre doing stuff
@@ -183,10 +184,6 @@ local function NightTime()
     end
 end
 
---hehe
-local function colorrap()
-    player:Kick("You've been Banned")
-end
 
 
 ------------------------------------------------------------
@@ -196,7 +193,7 @@ local function AlwaysDay()
     sets.Weather.CurrentTimeOverride = 10
 end
 
-local function ColorRape()
+local function HAHAHAHA()
     player:kick("i hate niggers too ^W^")
 end
 
@@ -274,7 +271,6 @@ frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = screenGui
-frame.ZIndex = 999
 
 local corner = Instance.new("UICorner", frame)
 corner.CornerRadius = UDim.new(0, 8)
@@ -297,40 +293,25 @@ local function makeButton(name, text, yPos, color)
 	return button
 end
 
-local espButton = makeButton("ESPButton", "Toggle ESP", 10, Color3.fromRGB(52, 235, 155))
-espButton.MouseButton1Click:Connect(function()
-	isBillboardVisible = not isBillboardVisible
-	CarEsp()
-end)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
 
-local envButton = makeButton("EnvButton", "Toggle Day/Night", 55, Color3.fromRGB(100, 100, 255))
-envButton.MouseButton1Click:Connect(function()
-	NightTime()
-	AlwaysDay()
-end)
 
-local colorButton = makeButton("ColorButton", "Swap Gun Color", 100, Color3.fromRGB(170, 0, 255))
-colorButton.MouseButton1Click:Connect(function()
-	currentColorIndex = (currentColorIndex % #colorList) + 1
-	autoChangeEnabled = true
-	updateWeaponAppearance()
+	if input.UserInputType == Enum.UserInputType.Keyboard then
+		if input.KeyCode == Enum.KeyCode.F1 then
+			PlayerEsp()
+		elseif input.KeyCode == Enum.KeyCode.F2 then
+			NightTime()
+            AlwaysDay()
+		elseif input.KeyCode == Enum.KeyCode.F3 then
+			updateWeaponAppearance()
+        elseif input.KeyCode == Enum.KeyCode.F4 then
+			HAHAHAHA()
+        elseif input.KeyCode == Enum.KeyCode.F5 then
+			HAHAHAHA()
+	end
 end)
-
-local aimButton = makeButton("AimButton", "Enable Aimbot", 145, Color3.fromRGB(255, 200, 0))
-aimButton.MouseButton1Click:Connect(function()
-	Aimbut()
-end)
-
-local kickButton = makeButton("KickButton", "I Hate niggers (Troll)", 190, Color3.fromRGB(255, 66, 66))
-kickButton.MouseButton1Click:Connect(function()
-	ColorRape()
-end)
-
 
 ------------------------------------------------------------
 
-print("1.0.4 fixed always day + cleaned up script")
-print("F1 esp")
-print("F2 world settings")
-print("F3 gun changer")
-print("F4 aimbot")
+print("loaded")
