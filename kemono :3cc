@@ -2,15 +2,109 @@ local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local LocalPlayer = game:GetService("Players").LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
-
+local mouse = player:GetMouse()
 print("Starting")
-Wait(3)
+wait(3)
 
 
---pre doing stuff
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local tracers = {}
+
+
+for _, player in ipairs(Players:GetPlayers()) do
+	if player ~= LocalPlayer then
+		local tracer = Drawing.new("Line")
+		tracer.Thickness = 1.5
+		tracer.Color = Color3.fromRGB(255, 255, 255)
+		tracer.Transparency = 1
+		tracer.Visible = true
+		tracers[player] = tracer
+	end
+end
+
+
+Players.PlayerAdded:Connect(function(player)
+	if player ~= LocalPlayer then
+		local tracer = Drawing.new("Line")
+		tracer.Thickness = 1.5
+		tracer.Color = Color3.fromRGB(255, 255, 255)
+		tracer.Transparency = 1
+		tracer.Visible = true
+		tracers[player] = tracer
+	end
+end)
+
+
+Players.PlayerRemoving:Connect(function(player)
+	if tracers[player] then
+		tracers[player]:Remove()
+		tracers[player] = nil
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	for player, tracer in pairs(tracers) do
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			local hrp = char.HumanoidRootPart
+			local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+			if onScreen then
+				tracer.From = Vector2.new(Camera.ViewportSize.X / 2, 0)
+				tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+				tracer.Visible = true
+			else
+				tracer.Visible = false
+			end
+		else
+			tracer.Visible = false
+		end
+	end
+end)
+
+local speedGui = Instance.new("ScreenGui")
+speedGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+speedGui.ResetOnSpawn = false
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0, 200, 0, 50)
+speedLabel.Position = UDim2.new(1, -180, 1, -60)
+speedLabel.AnchorPoint = Vector2.new(1, 1)
+speedLabel.BackgroundTransparency = 1
+speedLabel.TextTransparency = 1
+speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedLabel.TextScaled = true
+speedLabel.Font = Enum.Font.Code
+speedLabel.Text = "0 studs/s"
+speedLabel.Parent = speedGui
+
+local cuteLabel = Instance.new("TextLabel")
+cuteLabel.Size = UDim2.new(0, 200, 0, 150)
+cuteLabel.Position = UDim2.new(1, -30, 1, -120)
+cuteLabel.AnchorPoint = Vector2.new(1, 1)
+cuteLabel.BackgroundTransparency = 1
+cuteLabel.TextColor3 = Color3.fromRGB(41, 38, 38)
+cuteLabel.TextScaled = true
+cuteLabel.Font = Enum.Font.Code
+cuteLabel.Text = "69 studs/s\n" .. LocalPlayer.Name .. "\nOwO"
+cuteLabel.Parent = speedGui
+
+RunService.RenderStepped:Connect(function()
+	local velocity = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Velocity
+	if velocity then
+		local speed = velocity.Magnitude
+		speedLabel.Text = string.format("%d studs/s", math.floor(speed))
+		cuteLabel.Text = string.format("%d studs/s\n%s\nOwO", math.floor(speed), LocalPlayer.Name)
+	end
+end)
+
+
+
+
+-- Pre doing stuff
 local billboardData = {}
 local isBillboardVisible = true
 local currentColorIndex = 3
@@ -28,9 +122,35 @@ local colorList = {
 local meshColorMap = {}
 local autoChangeEnabled = false
 
+local function checkForWorldModel()
+    local localPlayerModel = player.Character
+    if not localPlayerModel then return end
+
+    local worldModel = localPlayerModel:FindFirstChild("WorldModel")
+    if worldModel then
+        local pointingLight = worldModel:FindFirstChildOfClass("PointLight") or worldModel:FindFirstChildOfClass("PointingLight")
+        if pointingLight then
+            pointingLight.Brightness = 1000
+            pointingLight.Range = 60
+            pointingLight.Color = Color3.fromRGB(170, 0, 0)
+        end
+    end
+end
+
+local function disableCameraBlur()
+    local blur = workspace.Camera:FindFirstChild("Blur")
+    if blur then
+        blur.Enabled = false
+    end
+end
+
+checkForWorldModel()
+disableCameraBlur()
+
 ------------------------------------------------------------
--- Esp (it's ASS)
+-- ESP (Health -> "ASD")
 ------------------------------------------------------------
+
 local function PlayerEsp(character)
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
@@ -43,7 +163,6 @@ local function PlayerEsp(character)
     billboardesp.Adornee = hrp
     billboardesp.Parent = character
     billboardesp.Enabled = true
-
 
     local function makeLabel(name, pos, color)
         local lbl = Instance.new("TextLabel")
@@ -65,28 +184,25 @@ local function PlayerEsp(character)
     local distanceLabel = makeLabel("DistanceLabel", UDim2.new(0, 0, 2/4, 0), Color3.fromRGB(204, 52, 235))
 
     local conn
-    conn = RunService.Heartbeat:Connect(function()
-        local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        local targetHRP = character and character:FindFirstChild("HumanoidRootPart")
+    conn = runService.Heartbeat:Connect(function()
+        local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = character:FindFirstChild("HumanoidRootPart")
         if not (myHRP and targetHRP and nameLabel and nameLabel.Parent) then
             if conn then conn:Disconnect() end
-            if billboard then billboard:Destroy() end
+            if billboardesp then billboardesp:Destroy() end
             return
         end
 
         local distStuds = (myHRP.Position - targetHRP.Position).Magnitude
         local distMeters = distStuds / 3.571
-
         local visible = distStuds <= 2200
         hpLabel.Visible = visible
         nameLabel.Visible = visible
         distanceLabel.Visible = visible
 
         if visible then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                hpLabel.Text = "HP: " .. math.floor(humanoid.Health)
-            end
+            -- Change health text to "ASD"
+            hpLabel.Text = "i hard abuse fentanyl"
             nameLabel.Text = "Name: " .. character.Name
             distanceLabel.Text = "Distance: " .. math.floor(distMeters) .. "m"
 
@@ -103,34 +219,34 @@ local function PlayerEsp(character)
     character.AncestryChanged:Connect(function(_, parent)
         if not parent then
             if conn then conn:Disconnect() end
-            if billboard then billboard:Destroy() end
+            if billboardesp then billboardesp:Destroy() end
         end
     end)
 end
 
 for _, model in ipairs(workspace:GetChildren()) do
-    if model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") and model ~= LocalPlayer.Character then
+    if model:IsA("Model") and model:FindFirstChild("HumanoidRootPart") and model ~= player.Character then
         PlayerEsp(model)
     end
 end
 
 workspace.ChildAdded:Connect(function(child)
-    if child:IsA("Model") and child:FindFirstChild("HumanoidRootPart") and child ~= LocalPlayer.Character then
+    if child:IsA("Model") and child:FindFirstChild("HumanoidRootPart") and child ~= player.Character then
         PlayerEsp(child)
     end
 end)
 
 ------------------------------------------------------------
--- Gun changerr (f3) :3ccccc
+-- Gun changer (f3)
 ------------------------------------------------------------
 
-
 local function cleanSurfaceAppearance(surfaceAppearance)
-    surfaceAppearance.ColorMap = ""
-    surfaceAppearance.MetalnessMap = ""
-    surfaceAppearance.NormalMap = ""
-    surfaceAppearance.RoughnessMap = ""
-    surfaceAppearance.AlphaMode = Enum.AlphaMode.Overlay
+    if typeof(surfaceAppearance) ~= "Instance" or not surfaceAppearance:IsDescendantOf(game) then return end
+    pcall(function() surfaceAppearance.ColorMap = nil end)
+    pcall(function() surfaceAppearance.MetalnessMap = nil end)
+    pcall(function() surfaceAppearance.NormalMap = nil end)
+    pcall(function() surfaceAppearance.RoughnessMap = nil end)
+    pcall(function() surfaceAppearance.AlphaMode = Enum.AlphaMode.Overlay end)
 end
 
 local function updateWeaponAppearance(tween)
@@ -159,11 +275,9 @@ local function updateWeaponAppearance(tween)
     end
 end
 
-
 local lastWeapon = nil
 runService.Heartbeat:Connect(function()
     if not autoChangeEnabled then return end
-
     local weapon = workspace.CurrentCamera:FindFirstChild("CurrentWeapon")
     if weapon and weapon ~= lastWeapon then
         lastWeapon = weapon
@@ -173,32 +287,25 @@ runService.Heartbeat:Connect(function()
 end)
 
 ------------------------------------------------------------
--- nofog
+-- No fog
 ------------------------------------------------------------
-
 local function NightTime()
     local atmosphere = game.Lighting:FindFirstChildOfClass("Atmosphere")
-    
     if atmosphere then
         atmosphere:Destroy()
     end
 end
 
-
-
 ------------------------------------------------------------
--- always day inc with nofog  :3ccccc
+-- Always day inc with no fog
 ------------------------------------------------------------
 local function AlwaysDay()
     sets.Weather.CurrentTimeOverride = 10
 end
 
-local function HAHAHAHA()
-    player:kick("i hate niggers too ^W^")
-end
-
---other cleanup shit
-
+------------------------------------------------------------
+-- Other cleanup shit
+------------------------------------------------------------
 local function cleanupPlayer(targetPlayer)
     if billboardData[targetPlayer] then
         local data = billboardData[targetPlayer]
@@ -228,90 +335,25 @@ for _, p in ipairs(game.Players:GetPlayers()) do onPlayerAdded(p) end
 game.Players.PlayerAdded:Connect(onPlayerAdded)
 game.Players.PlayerRemoving:Connect(cleanupPlayer)
 
-
-
-
-local function applyColorToMesh(mesh, colorIndex, tween)
-    local color = colorList[colorIndex]
-    meshColorMap[mesh.Name] = colorIndex
-    mesh.Transparency = 0.56
-
-    if tween then
-        tweenService:Create(mesh, TweenInfo.new(0.6), {
-            Color = color.Color,
-            BrickColor = color,
-            Transparency = 0.56,
-        }):Play()
-    else
-        mesh.BrickColor = color
-    end
-end
-
-local function applyToWeapon(weapon, tween)
-    for _, mesh in ipairs(weapon:GetDescendants()) do
-        if mesh:IsA("MeshPart") then
-            local sa = mesh:FindFirstChildOfClass("SurfaceAppearance")
-            if sa then cleanSurfaceAppearance(sa) end
-            local colorIndex = (meshColorMap[mesh.Name] or currentColorIndex)
-            applyColorToMesh(mesh, colorIndex, tween)
+------------------------------------------------------------
+-- Input listener
+------------------------------------------------------------
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.F1 then
+            PlayerEsp()
+        elseif input.KeyCode == Enum.KeyCode.F2 then
+            NightTime()
+            AlwaysDay()
+        elseif input.KeyCode == Enum.KeyCode.F3 then
+            updateWeaponAppearance(true)
+        elseif input.KeyCode == Enum.KeyCode.F4 then
+            HAHAHAHA()
+        elseif input.KeyCode == Enum.KeyCode.F5 then
+            HAHAHAHA()
         end
     end
-end
-
-
-
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-screenGui.Name = "CoolHackUI"
-screenGui.ResetOnSpawn = false
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 250)
-frame.Position = UDim2.new(0.02, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.Active = true
-frame.Draggable = true
-frame.Parent = screenGui
-
-local corner = Instance.new("UICorner", frame)
-corner.CornerRadius = UDim.new(0, 8)
-
-local function makeButton(name, text, yPos, color)
-	local button = Instance.new("TextButton")
-	button.Name = name
-	button.Size = UDim2.new(1, -20, 0, 35)
-	button.Position = UDim2.new(0, 10, 0, yPos)
-	button.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
-	button.TextColor3 = Color3.new(1, 1, 1)
-	button.Text = text
-	button.Font = Enum.Font.GothamBold
-	button.TextSize = 14
-	button.Parent = frame
-
-	local uiCorner = Instance.new("UICorner", button)
-	uiCorner.CornerRadius = UDim.new(0, 6)
-
-	return button
-end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-
-
-	if input.UserInputType == Enum.UserInputType.Keyboard then
-		if input.KeyCode == Enum.KeyCode.F1 then
-			PlayerEsp()
-		elseif input.KeyCode == Enum.KeyCode.F2 then
-			NightTime()
-            AlwaysDay()
-		elseif input.KeyCode == Enum.KeyCode.F3 then
-			updateWeaponAppearance()
-        elseif input.KeyCode == Enum.KeyCode.F4 then
-			HAHAHAHA()
-        elseif input.KeyCode == Enum.KeyCode.F5 then
-			HAHAHAHA()
-	end
 end)
-
-------------------------------------------------------------
 
 print("loaded")
