@@ -3,6 +3,10 @@ local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local tweenService = game:GetService("TweenService")
 local mouse = player:GetMouse()
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local localPlayer = Players.LocalPlayer
 print("Starting")
 wait(3)
 
@@ -148,7 +152,7 @@ checkForWorldModel()
 disableCameraBlur()
 
 ------------------------------------------------------------
--- ESP (Health -> "ASD")
+-- ESP (^w^)
 ------------------------------------------------------------
 
 local function PlayerEsp(character)
@@ -237,54 +241,153 @@ workspace.ChildAdded:Connect(function(child)
 end)
 
 ------------------------------------------------------------
--- Gun changer (f3)
+-- aimbot
 ------------------------------------------------------------
 
-local function cleanSurfaceAppearance(surfaceAppearance)
-    if typeof(surfaceAppearance) ~= "Instance" or not surfaceAppearance:IsDescendantOf(game) then return end
-    pcall(function() surfaceAppearance.ColorMap = nil end)
-    pcall(function() surfaceAppearance.MetalnessMap = nil end)
-    pcall(function() surfaceAppearance.NormalMap = nil end)
-    pcall(function() surfaceAppearance.RoughnessMap = nil end)
-    pcall(function() surfaceAppearance.AlphaMode = Enum.AlphaMode.Overlay end)
+local function StartAimbot()
+
+	-- Settings
+	local aimbotEnabled = true
+	local holdingMB2 = false
+	local FOV_RADIUS = 150
+	local LOCK_SMOOTHNESS = 0
+
+	
+	local fovCircle = Drawing.new("Circle")
+	fovCircle.Position = Vector2.new(0, 0)
+	fovCircle.Radius = FOV_RADIUS
+	fovCircle.Color = Color3.fromRGB(255, 255, 255)
+	fovCircle.Thickness = 1
+	fovCircle.NumSides = 100
+	fovCircle.Visible = true
+	fovCircle.Filled = false
+
+	
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			holdingMB2 = true
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input, processed)
+		if input.UserInputType == Enum.UserInputType.MouseButton2 then
+			holdingMB2 = false
+		end
+	end)
+
+	local function getClosestTarget()
+		local cam = workspace.CurrentCamera
+		local closest, closestDist = nil, FOV_RADIUS
+
+		for _, player in pairs(Players:GetPlayers()) do
+			if player ~= localPlayer then
+				local model = workspace:FindFirstChild(player.Name)
+				if model and model:FindFirstChild("Head") then
+					local head = model.Head
+					local screenPos, onScreen = cam:WorldToViewportPoint(head.Position)
+					if onScreen then
+						local dist = (Vector2.new(screenPos.X, screenPos.Y) - UserInputService:GetMouseLocation()).Magnitude
+						if dist < closestDist then
+							closest = head
+							closestDist = dist
+						end
+					end
+				end
+			end
+		end
+		return closest
+	end
+
+	
+	RunService.RenderStepped:Connect(function()
+		fovCircle.Position = UserInputService:GetMouseLocation()
+
+		local character = workspace:FindFirstChild(localPlayer.Name)
+		local facingPart = character and character:FindFirstChild("FacingPart")
+		local camera = workspace.CurrentCamera
+
+		if not facingPart then return end
+
+		if aimbotEnabled and holdingMB2 then
+			local head = getClosestTarget()
+			if head then
+				local targetPos = head.Position
+				local fromPos = facingPart.Position
+
+				local targetCF = CFrame.new(fromPos, targetPos)
+
+				pcall(function()
+					local hrp = character:FindFirstChild("HumanoidRootPart")
+					if hrp then hrp:SetNetworkOwner(localPlayer) end
+				end)
+
+				if facingPart.Anchored then
+					facingPart.Anchored = false
+				end
+
+				if LOCK_SMOOTHNESS <= 0 then
+					facingPart.CFrame = targetCF
+				else
+					facingPart.CFrame = facingPart.CFrame:Lerp(targetCF, math.clamp(1 - LOCK_SMOOTHNESS, 0, 1))
+				end
+
+				camera.CFrame = camera.CFrame:Lerp(CFrame.lookAt(camera.CFrame.Position, targetPos), 1 - LOCK_SMOOTHNESS)
+
+				fovCircle.Color = Color3.fromRGB(255, 0, 0)
+				return
+			end
+		end
+
+		fovCircle.Color = Color3.fromRGB(255, 255, 255)
+	end)
 end
 
-local function updateWeaponAppearance(tween)
-    local weapon = workspace.CurrentCamera:FindFirstChild("CurrentWeapon")
-    if not weapon then return end
 
-    for _, mesh in ipairs(weapon:GetDescendants()) do
-        if mesh:IsA("MeshPart") then
-            local sa = mesh:FindFirstChildOfClass("SurfaceAppearance")
-            if sa then cleanSurfaceAppearance(sa) end
 
-            meshColorMap[mesh.Name] = currentColorIndex
-            local color = colorList[currentColorIndex].Color
-            mesh.Transparency = 0.56
-            mesh.BrickColor = colorList[currentColorIndex]
+--fov...
+local function SigmaFOV(newValue)
+	local targetValue = ReplicatedStorage:FindFirstChild("CustomCharacter")
+	if targetValue then
+		local config = targetValue:FindFirstChild("Configuration")
+		if config then
+			local fovSetting = config:FindFirstChild("cl_default_fov")
+			if fovSetting and fovSetting:IsA("IntValue") then
+				fovSetting.Value = newValue
+				print("Set FOV to", newValue)
+			else
+				warn("gr")
+			end
+		else
+			warn("grr")
+		end
+	else
+		warn("grrr")
+	end
+end
+SigmaFOV(120)
 
-            if tween then
-                tweenService:Create(mesh, TweenInfo.new(0.6), {
-                    Color = color,
-                    Transparency = 0.56,
-                }):Play()
-            else
-                mesh.Color = color
+
+--treehider
+local function hideAllLeaves()
+    local treesFolder = workspace:FindFirstChild("world_assets")?
+        :FindFirstChild("StaticObjects")?
+        :FindFirstChild("Trees")
+
+    if not treesFolder then
+        warn("Trees folder not found.")
+        return
+    end
+
+    for _, model in pairs(treesFolder:GetChildren()) do
+        if model:IsA("Model") then
+            local leaves = model:FindFirstChild("Leaves", true) -- true = recursive
+            if leaves and leaves:IsA("MeshPart") then
+                leaves.Transparency = 1
             end
         end
     end
 end
 
-local lastWeapon = nil
-runService.Heartbeat:Connect(function()
-    if not autoChangeEnabled then return end
-    local weapon = workspace.CurrentCamera:FindFirstChild("CurrentWeapon")
-    if weapon and weapon ~= lastWeapon then
-        lastWeapon = weapon
-        updateWeaponAppearance(false)
-        print(lastWeapon)
-    end
-end)
+
 
 ------------------------------------------------------------
 -- No fog
@@ -347,11 +450,11 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
             NightTime()
             AlwaysDay()
         elseif input.KeyCode == Enum.KeyCode.F3 then
-            updateWeaponAppearance(true)
+            SigmaFOV()
         elseif input.KeyCode == Enum.KeyCode.F4 then
-            HAHAHAHA()
+            StartAimbot()
         elseif input.KeyCode == Enum.KeyCode.F5 then
-            HAHAHAHA()
+            hideAllLeaves()
         end
     end
 end)
