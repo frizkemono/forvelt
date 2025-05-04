@@ -4,7 +4,7 @@ local player = Players.LocalPlayer
 print("script broke spam ping me to update")
 
 
-wait(4)
+wait(10)
 local function endGame()
     player:Kick("script broke spam ping me to update")
 end
