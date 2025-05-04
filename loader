@@ -1,7 +1,5 @@
---// Configuration
-local keyURL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/key.txt"
 
---// Create UI
+local keyURL = "https://raw.githubusercontent.com/frizkemono/forvelt/refs/heads/main/key"
 local player = game:GetService("Players").LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "KeyUI"
@@ -79,7 +77,7 @@ local function getRemoteKey()
 		return game:HttpGet(keyURL)
 	end)
 	if success then
-		return result:match("^%s*(.-)%s*$") -- Trim spaces/newlines
+		return result:match("^%s*(.-)%s*$")
 	else
 		warn("Failed to fetch key: " .. tostring(result))
 		return nil
