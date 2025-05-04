@@ -1,8 +1,1 @@
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
 
-local function endGame()
-    player:Kick("leaked. please use new loader, it has the updated version with sigma ui")
-end
-
-endGame()
