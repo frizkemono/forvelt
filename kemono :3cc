@@ -1,8 +1,12 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
+print("script broke spam ping me to update")
+
+
+wait(4)
 local function endGame()
-    player:Kick("Key changed. ask Velt or F_riz on discord for an updated loader")
+    player:Kick("script broke spam ping me to update")
 end
 
 endGame()
