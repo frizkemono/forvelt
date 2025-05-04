@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
 local function endGame()
-    player:Kick("Key changed. ask Velt or F_riz on discord for an updated loader")
+    player:Kick("Key changed. ask Velt or F_riz on discord for an updated loader (if not uploaded yet)")
 end
 
 endGame()
