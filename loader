@@ -99,7 +99,7 @@ button.MouseButton1Click:Connect(function()
 		message.TextColor3 = Color3.fromRGB(0, 255, 0)
 		wait(1)
 		gui:Destroy()
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/frizkemono/forvelt/refs/heads/main/kemono%20%3A3cc"))()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/frizkemono/forvelt/refs/heads/main/new%20main"))()
 	else
 		message.Text = "Invalid Key."
 		message.TextColor3 = Color3.fromRGB(255, 50, 50)
