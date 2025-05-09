@@ -1,0 +1,17 @@
+local Players = game:GetService("Players")
+
+local function smegma()
+    print("works")
+end
+
+local function checkKey()
+    if _G.Key == "K2KE" then
+        smegma()
+    else
+        for _, player in pairs(Players:GetPlayers()) do
+            player:Kick("meow")
+        end
+    end
+end
+
+checkKey()
